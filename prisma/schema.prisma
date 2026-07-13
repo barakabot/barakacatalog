@@ -1,0 +1,119 @@
+// Prisma schema for Baraka Product Catalog Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Settings {
+  id            String   @id @default("default")
+  currencyUnit  String   @default("ریال")
+  adminPassword String   @default("admin123")
+
+  @@map("Settings")
+}
+
+model ProductGroup {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  parentId    String?
+  order       Int            @default(0)
+  parent      ProductGroup?  @relation("GroupTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    ProductGroup[] @relation("GroupTree")
+  products    Product[]
+  createdAt   DateTime       @default(now()) @map("createdAt")
+  updatedAt   DateTime       @updatedAt @map("updatedAt")
+
+  @@map("ProductGroup")
+}
+
+model Product {
+  id                   String             @id @default(cuid())
+  name                 String
+  description          String?
+  price                Float              @default(0)
+  imageUrl             String?
+  groupId              String?
+  group                ProductGroup?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  competitiveAdvantage String?
+  promotionDescription String?
+  targetMarket         String?
+  margin               Float?
+  deletedAt            DateTime?
+  images               ProductImage[]
+  competitorProducts   CompetitorProduct[]
+  createdAt            DateTime           @default(now()) @map("createdAt")
+  updatedAt            DateTime           @updatedAt @map("updatedAt")
+
+  @@map("Product")
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  url       String
+  alt       String?
+  order     Int      @default(0)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("createdAt")
+
+  @@map("ProductImage")
+}
+
+model CompetitorProduct {
+  id                 String                  @id @default(cuid())
+  source             String
+  sourceId           String?
+  name               String
+  imageUrl           String?
+  weight             String?
+  volume             String?
+  price              Float?
+  originalPrice      Float?
+  discountPercent    Float?
+  brand              String?
+  coefficient        Float?
+  fetchedAt          DateTime?
+  catalogProductId   String?
+  catalogProduct     Product?                @relation(fields: [catalogProductId], references: [id], onDelete: SetNull)
+  priceHistory       CompetitorPriceHistory[]
+  createdAt          DateTime                @default(now()) @map("createdAt")
+  updatedAt          DateTime                @updatedAt @map("updatedAt")
+
+  @@map("CompetitorProduct")
+}
+
+model Proxy {
+  id        String   @id @default(cuid())
+  host      String
+  port      Int
+  username  String?
+  password  String?
+  protocol  String   @default("http")
+  isActive  Boolean  @default(true)
+  lastCheck DateTime?
+  latency   Int?     // ms
+  status    String   @default("unknown") // unknown, alive, dead
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  @@map("Proxy")
+}
+
+model CompetitorPriceHistory {
+  id                 String            @id @default(cuid())
+  competitorProductId String
+  competitorProduct  CompetitorProduct @relation(fields: [competitorProductId], references: [id], onDelete: Cascade)
+  price              Float
+  originalPrice      Float?
+  discountPercent    Float?
+  fetchedAt          DateTime          @default(now())
+
+  @@map("CompetitorPriceHistory")
+}

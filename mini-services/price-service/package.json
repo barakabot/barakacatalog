@@ -1,0 +1,7 @@
+{
+  "name": "price-service",
+  "version": "2.0.0",
+  "scripts": {
+    "dev": "bash keep-alive.sh"
+  }
+}
