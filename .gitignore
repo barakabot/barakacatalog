@@ -62,3 +62,13 @@ server.log
 *.db
 *.db-shm
 *.db-wal
+
+# Temp debug files
+server-wrapper.js
+start-server.sh
+keepalive.sh
+screenshot-*.png
+test-*.png
+proxies-*.png
+upload-result.png
+proxy-panel.png

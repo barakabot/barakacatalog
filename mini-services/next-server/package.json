@@ -1,6 +1,0 @@
-{
-  "name": "next-server",
-  "scripts": {
-    "dev": "cd /home/z/my-project && next dev -p 3000"
-  }
-}
