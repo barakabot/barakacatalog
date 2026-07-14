@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { apiCall } from '@/lib/use-api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Shield, Upload, Loader2, CheckCircle2, XCircle, AlertCircle, Activity, FileText } from 'lucide-react'
+import { Shield, Upload, Loader2, CheckCircle2, XCircle, Activity } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ProxyStatus {
@@ -22,9 +22,21 @@ export function ProxyStatusBar({ onOpenProxyPanel }: Props) {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [checking, setChecking] = useState(false)
-  const [showUpload, setShowUpload] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  function refreshStatus(proxies: Array<{ status: string; isActive: boolean }>) {
+    setStatus({
+      total: proxies.length,
+      alive: proxies.filter(p => p.status === 'alive' && p.isActive).length,
+      dead: proxies.filter(p => p.status === 'dead').length,
+    })
+  }
+
+  async function loadAndRefresh() {
+    const res = await apiCall<Array<{ status: string; isActive: boolean }>>('/api/proxies')
+    if (res.ok && res.data) refreshStatus(res.data)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -32,14 +44,7 @@ export function ProxyStatusBar({ onOpenProxyPanel }: Props) {
       setLoading(true)
       const res = await apiCall<Array<{ status: string; isActive: boolean }>>('/api/proxies')
       if (cancelled) return
-      if (res.ok && res.data) {
-        const proxies = res.data
-        setStatus({
-          total: proxies.length,
-          alive: proxies.filter(p => p.status === 'alive' && p.isActive).length,
-          dead: proxies.filter(p => p.status === 'dead').length,
-        })
-      }
+      if (res.ok && res.data) refreshStatus(res.data)
       setLoading(false)
     }
     load()
@@ -61,17 +66,7 @@ export function ProxyStatusBar({ onOpenProxyPanel }: Props) {
       toast.success(res.data?.message ?? 'پروکسی‌ها اضافه شدند')
       if (fileRef.current) fileRef.current.value = ''
       setSelectedFile(null)
-      setShowUpload(false)
-      // refresh status inline
-      const statusRes = await apiCall<Array<{ status: string; isActive: boolean }>>('/api/proxies')
-      if (statusRes.ok && statusRes.data) {
-        const px = statusRes.data
-        setStatus({
-          total: px.length,
-          alive: px.filter(p => p.status === 'alive' && p.isActive).length,
-          dead: px.filter(p => p.status === 'dead').length,
-        })
-      }
+      await loadAndRefresh()
     } else {
       toast.error(res.error ?? 'خطا در آپلود')
     }
@@ -85,16 +80,7 @@ export function ProxyStatusBar({ onOpenProxyPanel }: Props) {
     setChecking(false)
     if (res.ok) {
       toast.success(res.data?.message ?? 'بررسی تمام شد')
-      // refresh status inline
-      const statusRes = await apiCall<Array<{ status: string; isActive: boolean }>>('/api/proxies')
-      if (statusRes.ok && statusRes.data) {
-        const px = statusRes.data
-        setStatus({
-          total: px.length,
-          alive: px.filter(p => p.status === 'alive' && p.isActive).length,
-          dead: px.filter(p => p.status === 'dead').length,
-        })
-      }
+      await loadAndRefresh()
     } else {
       toast.error(res.error ?? 'خطا در بررسی')
     }
@@ -109,24 +95,17 @@ export function ProxyStatusBar({ onOpenProxyPanel }: Props) {
     )
   }
 
+  const hasProxies = status && status.total > 0
+
   return (
     <div className="space-y-2">
-      {/* Status row */}
-      <div className="flex items-center gap-2 p-2.5 rounded-lg bg-muted/50 border border-border/60">
-        <Shield className="w-4 h-4 text-primary shrink-0" />
+      {/* Status + Upload row — always visible */}
+      <div className="p-2.5 rounded-lg border bg-muted/30 border-border/60">
+        <div className="flex items-center gap-2 mb-2">
+          <Shield className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-xs font-medium">پروکسی</span>
 
-        {!status || status.total === 0 ? (
-          <>
-            <span className="text-xs text-amber-700 dark:text-amber-300 flex-1">
-              پروکسی‌ای وجود ندارد — اسکرپ بدون پروکسی انجام می‌شود
-            </span>
-            <Button onClick={() => setShowUpload(v => !v)} size="sm" variant="outline" className="h-7 text-xs gap-1">
-              <Upload className="w-3 h-3" />
-              آپلود پروکسی
-            </Button>
-          </>
-        ) : (
-          <>
+          {hasProxies ? (
             <div className="flex items-center gap-1.5 text-xs flex-1">
               {status.alive > 0 ? (
                 <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] px-1.5 py-0 gap-0.5">
@@ -146,27 +125,22 @@ export function ProxyStatusBar({ onOpenProxyPanel }: Props) {
               )}
               <span className="text-muted-foreground">({status.total} کل)</span>
             </div>
-            <Button onClick={() => setShowUpload(v => !v)} size="sm" variant="ghost" className="h-7 text-xs gap-1">
-              <Upload className="w-3 h-3" />
-              {showUpload ? 'بستن' : 'افزودن'}
-            </Button>
+          ) : (
+            <span className="text-xs text-amber-700 dark:text-amber-300 flex-1">
+              پروکسی‌ای وجود ندارد — اسکرپ بدون پروکسی انجام می‌شود
+            </span>
+          )}
+
+          {hasProxies && (
             <Button onClick={handleCheck} disabled={checking} size="sm" variant="ghost" className="h-7 text-xs gap-1">
               {checking ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3" />}
-              بررسی
+              بررسی سلامت
             </Button>
-            {onOpenProxyPanel && (
-              <Button onClick={onOpenProxyPanel} size="sm" variant="ghost" className="h-7 text-xs gap-1">
-                <FileText className="w-3 h-3" />
-                مدیریت
-              </Button>
-            )}
-          </>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Inline upload area (collapsible) */}
-      {showUpload && (
-        <div className="flex gap-2 items-end p-2.5 rounded-lg border border-dashed border-primary/40 bg-primary/5">
+        {/* Upload area — always visible */}
+        <div className="flex gap-2 items-end">
           <div className="flex-1">
             <input
               ref={fileRef}
@@ -179,12 +153,12 @@ export function ProxyStatusBar({ onOpenProxyPanel }: Props) {
               فرمت: host:port یا host:port:user:pass — فایل .txt یا .csv
             </p>
           </div>
-          <Button onClick={handleUpload} disabled={uploading || !selectedFile} size="sm" className="h-8 text-xs gap-1">
+          <Button onClick={handleUpload} disabled={uploading || !selectedFile} size="sm" className="h-8 text-xs gap-1 shrink-0">
             {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-            آپلود
+            آپلود پروکسی
           </Button>
         </div>
-      )}
+      </div>
     </div>
   )
 }
