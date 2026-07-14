@@ -627,6 +627,8 @@ export function CompetitorsSection() {
             </>
           ) : (
             <>
+              <ProxyStatusBar onOpenProxyPanel={() => { setImportDialog(false); setTimeout(() => setProxyPanelOpen(true), 100) }} />
+
               {/* Results table */}
               <div className="flex items-center gap-3 mb-2">
                 <p className="text-sm font-medium">
