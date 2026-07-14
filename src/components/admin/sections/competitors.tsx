@@ -83,6 +83,7 @@ import { ScrapeDialog } from './scrape-dialog'
 import { PriceCompareDialog } from './price-compare-dialog'
 import { CompetitorEditForm } from './competitor-edit-form'
 import { ProxyPanel } from './proxy-panel'
+import { ProxyStatusBar } from './proxy-status-bar'
 
 const SOURCES = ['DIGIKALA', 'SNAPPSHOP', 'TOROB'] as const
 
@@ -119,6 +120,9 @@ export function CompetitorsSection() {
   const [compareTarget, setCompareTarget] = useState<CompetitorProduct | null>(null)
   const [refreshingId, setRefreshingId] = useState<string | null>(null)
   const [bulkRefreshing, setBulkRefreshing] = useState(false)
+
+  // Proxy panel state — shared between toolbar, ScrapeDialog and ImportDialog
+  const [proxyPanelOpen, setProxyPanelOpen] = useState(false)
 
   // Excel import state
   const [importDialog, setImportDialog] = useState(false)
@@ -295,7 +299,10 @@ export function CompetitorsSection() {
                 <Download className="w-4 h-4 ml-1" />
                 دانلود تمپلت
               </Button>
-              <ProxyPanel />
+              <ProxyPanel
+        externalOpen={proxyPanelOpen}
+        onExternalOpenChange={setProxyPanelOpen}
+      />
               <Button
                 onClick={refreshAll}
                 variant="outline"
@@ -557,6 +564,8 @@ export function CompetitorsSection() {
 
           {!importResults ? (
             <>
+              <ProxyStatusBar onOpenProxyPanel={() => { setImportDialog(false); setTimeout(() => setProxyPanelOpen(true), 100) }} />
+
               <div className="space-y-3">
                 <div
                   className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
@@ -753,6 +762,7 @@ export function CompetitorsSection() {
         onClose={() => setScrapeOpen(false)}
         onSaved={() => { setScrapeOpen(false); refetch() }}
         products={products}
+        onOpenProxyPanel={() => { setScrapeOpen(false); setTimeout(() => setProxyPanelOpen(true), 100) }}
       />
 
       {/* Edit sheet */}

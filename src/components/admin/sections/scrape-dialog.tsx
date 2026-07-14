@@ -38,6 +38,7 @@ import {
 import { Check, ChevronsUpDown, Link2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Loader2, Globe, Sparkles, Save, AlertCircle, ExternalLink, CheckCircle2, Search } from 'lucide-react'
+import { ProxyStatusBar } from './proxy-status-bar'
 import { toast } from 'sonner'
 import { formatCurrency, formatNumber } from '@/lib/format'
 
@@ -48,6 +49,7 @@ interface Props {
   onClose: () => void
   onSaved: () => void
   products: Product[]
+  onOpenProxyPanel?: () => void
 }
 
 interface ScrapeData {
@@ -63,7 +65,7 @@ interface ScrapeData {
   brand: string | null
 }
 
-export function ScrapeDialog({ open, onClose, onSaved, products }: Props) {
+export function ScrapeDialog({ open, onClose, onSaved, products, onOpenProxyPanel }: Props) {
   const [source, setSource] = useState<Source>('DIGIKALA')
   const [sourceId, setSourceId] = useState('')
   const [previewing, setPreviewing] = useState(false)
@@ -171,6 +173,9 @@ export function ScrapeDialog({ open, onClose, onSaved, products }: Props) {
             با وارد کردن شناسه محصول، اطلاعات و قیمت از {sourceLabel} استخراج می‌شود
           </DialogDescription>
         </DialogHeader>
+
+        {/* Proxy status bar */}
+        <ProxyStatusBar onOpenProxyPanel={onOpenProxyPanel ?? (() => {})} />
 
         {/* Source + ID input */}
         <div className="space-y-4">

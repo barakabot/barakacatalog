@@ -44,8 +44,18 @@ interface CheckResult {
   error?: string
 }
 
-export function ProxyPanel() {
-  const [open, setOpen] = useState(false)
+interface Props {
+  /** Allow parent to control dialog open state */
+  externalOpen?: boolean
+  onExternalOpenChange?: (open: boolean) => void
+  /** Hide the trigger button (when used from inside another dialog) */
+  hideTrigger?: boolean
+}
+
+export function ProxyPanel({ externalOpen, onExternalOpenChange, hideTrigger }: Props) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = externalOpen !== undefined ? externalOpen : internalOpen
+  const setOpen = onExternalOpenChange ?? setInternalOpen
   const [proxies, setProxies] = useState<ProxyItem[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -144,15 +154,17 @@ export function ProxyPanel() {
   return (
     <>
       {/* Trigger button — placed in parent toolbar */}
-      <Button onClick={handleOpen} variant="outline" size="sm">
-        <Shield className="w-4 h-4 ml-1" />
-        {aliveCount > 0 && (
-          <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
-            {aliveCount}
-          </Badge>
-        )}
-        پروکسی‌ها
-      </Button>
+      {!hideTrigger && (
+        <Button onClick={handleOpen} variant="outline" size="sm">
+          <Shield className="w-4 h-4 ml-1" />
+          {aliveCount > 0 && (
+            <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
+              {aliveCount}
+            </Badge>
+          )}
+          پروکسی‌ها
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={(o) => { if (!o) setCheckResults(null); setOpen(o) }}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
